@@ -1,0 +1,207 @@
+{% extends 'testapp/base.html' %}
+
+{% block title %}Checkout | Aura Café{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Step Progress Indicator -->
+    <div class="step-indicator" id="step-indicator">
+        <div class="step completed">
+            <span class="step-num">✓</span>
+            <span class="step-label">Cart</span>
+        </div>
+        <div class="step-connector filled"></div>
+        <div class="step active">
+            <span class="step-num">2</span>
+            <span class="step-label">Details</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step">
+            <span class="step-num">3</span>
+            <span class="step-label">Confirm</span>
+        </div>
+    </div>
+
+    <!-- Empty Cart Alert (hidden by default, shown via JS if cart is empty) -->
+    <div class="empty-checkout-alert" id="empty-checkout-alert" style="display: none;">
+        <div class="alert-icon">🛒</div>
+        <h2>Your cart is empty</h2>
+        <p>Add some delicious items from our menu before checking out.</p>
+        <a href="{% url 'menu' %}" class="hero-cta" style="opacity: 1;">
+            Browse Menu
+            <span class="cta-arrow">→</span>
+        </a>
+    </div>
+
+    <div class="checkout-wrapper" id="checkout-wrapper">
+        <!-- Form Panel -->
+        <div class="checkout-panel">
+            <h1 class="checkout-title">Complete Your Order</h1>
+            
+            <form action="{% url 'checkout' %}" method="POST" id="checkout-form" novalidate>
+                {% csrf_token %}
+                
+                <!-- Hidden input field to hold the JSON string of cart items -->
+                <input type="hidden" name="cart_data" id="cart-data-input">
+                
+                <div class="form-group">
+                    <label for="id_customer_name" class="form-label">Full Name</label>
+                    <input type="text" 
+                           id="id_customer_name" 
+                           name="customer_name" 
+                           class="form-control {% if errors.customer_name %}invalid{% endif %}" 
+                           placeholder="John Doe…" 
+                           value="{{ customer_name|default:'' }}"
+                           autocomplete="name"
+                           required
+                           minlength="2">
+                    <div class="validation-msg {% if errors.customer_name %}show error{% endif %}" id="name-validation">
+                        {{ errors.customer_name|default:'' }}
+                    </div>
+                </div>
+                
+                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="id_customer_email" class="form-label">Email Address</label>
+                        <input type="email" 
+                               id="id_customer_email" 
+                               name="customer_email" 
+                               class="form-control {% if errors.customer_email %}invalid{% endif %}" 
+                               placeholder="jane.doe@example.com…" 
+                               value="{{ customer_email|default:'' }}"
+                               autocomplete="email"
+                               spellcheck="false"
+                               required>
+                        <div class="validation-msg {% if errors.customer_email %}show error{% endif %}" id="email-validation">
+                            {{ errors.customer_email|default:'' }}
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="id_customer_phone" class="form-label">Phone Number</label>
+                        <input type="tel" 
+                               id="id_customer_phone" 
+                               name="customer_phone" 
+                               class="form-control {% if errors.customer_phone %}invalid{% endif %}" 
+                               placeholder="+1 (555) 000-0000…" 
+                               value="{{ customer_phone|default:'' }}"
+                               autocomplete="tel"
+                               required>
+                        <div class="validation-msg {% if errors.customer_phone %}show error{% endif %}" id="phone-validation">
+                            {{ errors.customer_phone|default:'' }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_address_or_notes" class="form-label">Special Instructions / Notes</label>
+                    <textarea id="id_address_or_notes" 
+                              name="address_or_notes" 
+                              class="form-control" 
+                              placeholder="e.g. Extra syrup, milk preferences, allergies…">{{ address_or_notes|default:'' }}</textarea>
+                </div>
+                
+                <button type="submit" class="submit-order-btn" id="submit-order-btn">
+                    Place Order
+                </button>
+            </form>
+        </div>
+        
+        <!-- Order Summary Sidebar -->
+        <div class="summary-panel">
+            <h3 class="summary-title">Order Summary</h3>
+            <div class="summary-items" id="checkout-summary-list">
+                <!-- Populated via JavaScript from localStorage -->
+            </div>
+            
+            <div class="summary-total">
+                <span>Total</span>
+                <span id="checkout-total-val" style="color: var(--color-primary);">$0.00</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if cart is empty, show alert
+    const cart = JSON.parse(localStorage.getItem('aura_cart')) || [];
+    const checkoutWrapper = document.getElementById('checkout-wrapper');
+    const emptyAlert = document.getElementById('empty-checkout-alert');
+    const stepIndicator = document.getElementById('step-indicator');
+    
+    if (cart.length === 0) {
+        if (checkoutWrapper) checkoutWrapper.style.display = 'none';
+        if (emptyAlert) emptyAlert.style.display = 'block';
+        if (stepIndicator) stepIndicator.style.display = 'none';
+        return;
+    }
+    
+    // Inline validation
+    const nameInput = document.getElementById('id_customer_name');
+    const emailInput = document.getElementById('id_customer_email');
+    const phoneInput = document.getElementById('id_customer_phone');
+    
+    function validateField(input, validationEl, rules) {
+        const value = input.value.trim();
+        let isValid = true;
+        let message = '';
+        
+        if (rules.required && !value) {
+            isValid = false;
+            message = 'This field is required';
+        } else if (rules.minlength && value.length < rules.minlength) {
+            isValid = false;
+            message = `Must be at least ${rules.minlength} characters`;
+        } else if (rules.pattern && !rules.pattern.test(value)) {
+            isValid = false;
+            message = rules.patternMsg || 'Invalid format';
+        } else if (value) {
+            message = '✓ Looks good';
+        }
+        
+        input.classList.remove('valid', 'invalid');
+        const msgEl = document.getElementById(validationEl);
+        
+        if (value) {
+            input.classList.add(isValid ? 'valid' : 'invalid');
+            if (msgEl) {
+                msgEl.textContent = message;
+                msgEl.className = `validation-msg show ${isValid ? 'success' : 'error'}`;
+            }
+        } else {
+            if (msgEl) msgEl.className = 'validation-msg';
+        }
+        
+        return isValid;
+    }
+    
+    if (nameInput) {
+        nameInput.addEventListener('blur', () => {
+            validateField(nameInput, 'name-validation', { required: true, minlength: 2 });
+        });
+    }
+    
+    if (emailInput) {
+        emailInput.addEventListener('blur', () => {
+            validateField(emailInput, 'email-validation', {
+                required: true,
+                pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                patternMsg: 'Please enter a valid email address'
+            });
+        });
+    }
+    
+    if (phoneInput) {
+        phoneInput.addEventListener('blur', () => {
+            validateField(phoneInput, 'phone-validation', {
+                required: true,
+                pattern: /^[\+]?[\d\s\-\(\)]{7,}$/,
+                patternMsg: 'Please enter a valid phone number'
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

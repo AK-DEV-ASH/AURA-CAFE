@@ -1,0 +1,104 @@
+{% extends 'testapp/base.html' %}
+
+{% block title %}Order Placed Successfully | Aura Café{% endblock %}
+
+{% block content %}
+<!-- Confetti Container -->
+<div class="confetti-container" id="confetti-container"></div>
+
+<div class="container">
+    <div class="success-container">
+        <!-- Animated SVG Checkmark -->
+        <svg class="success-checkmark" viewBox="0 0 80 80">
+            <circle class="circle" cx="40" cy="40" r="38"/>
+            <polyline class="check" points="26 42 36 52 56 30"/>
+        </svg>
+        
+        <h1 class="success-title">Thank You for Your Order!</h1>
+        <p class="success-subtitle">
+            Your order has been received and is being prepared with care.
+        </p>
+        
+        <!-- Order Receipt -->
+        <div class="receipt-box">
+            <div class="receipt-header">
+                Order Reference: #{{ order.id }}
+            </div>
+            
+            <div class="receipt-row">
+                <span style="color: var(--text-muted);">Customer</span>
+                <span>{{ order.customer_name }}</span>
+            </div>
+            <div class="receipt-row">
+                <span style="color: var(--text-muted);">Phone</span>
+                <span>{{ order.customer_phone }}</span>
+            </div>
+            <div class="receipt-row" style="margin-bottom: 20px;">
+                <span style="color: var(--text-muted);">Placed At</span>
+                <span>{{ order.created_at|date:"Y-m-d H:i" }}</span>
+            </div>
+            
+            <h4 style="font-family: var(--font-heading); margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                Items Summary
+            </h4>
+            
+            {% for item in order.items.all %}
+                <div class="receipt-row">
+                    <span>{{ item.quantity }} x {{ item.menu_item.name }}</span>
+                    <span>${{ item.price }}</span>
+                </div>
+            {% endfor %}
+            
+            <div class="receipt-row receipt-total">
+                <span>Total Paid</span>
+                <span>${{ order.total_price }}</span>
+            </div>
+        </div>
+        
+        <p style="margin-bottom: 40px; font-weight: 500;">
+            Estimated Preparation Time: <span style="color: var(--color-primary);" id="est-time">15 - 20 minutes</span>. We'll send updates to your contact details.
+        </p>
+        
+        <a href="{% url 'menu' %}" class="home-link-btn">
+            Back to Menu
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // ── Confetti Burst ──
+    const container = document.getElementById('confetti-container');
+    if (container) {
+        const colors = ['#d4a373', '#e8c9a0', '#a98467', '#f5ebe0', '#adc178', '#4ecdc4'];
+        const shapes = ['circle', 'rect'];
+        
+        for (let i = 0; i < 60; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const size = Math.random() * 8 + 6;
+            const shape = shapes[Math.floor(Math.random() * shapes.length)];
+            
+            piece.style.left = Math.random() * 100 + '%';
+            piece.style.width = size + 'px';
+            piece.style.height = size + 'px';
+            piece.style.background = color;
+            piece.style.borderRadius = shape === 'circle' ? '50%' : '2px';
+            piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            piece.style.animationDelay = (Math.random() * 0.8) + 's';
+            
+            container.appendChild(piece);
+        }
+        
+        // Remove confetti after animations complete
+        setTimeout(() => {
+            container.remove();
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

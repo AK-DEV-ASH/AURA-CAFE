@@ -1,0 +1,243 @@
+{% extends 'testapp/base.html' %}
+{% load static %}
+
+{% block title %}Menu | Aura Café{% endblock %}
+
+{% block content %}
+<!-- Hero Header -->
+<section class="hero">
+    <!-- Floating Particles -->
+    <div class="hero-particles">
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+        <div class="hero-particle"></div>
+    </div>
+    
+    <div class="container">
+        <!-- Decorative coffee icon -->
+        <div class="hero-coffee-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
+                <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>
+                <line x1="6" x2="6" y1="2" y2="4"/>
+                <line x1="10" x2="10" y1="2" y2="4"/>
+                <line x1="14" x2="14" y1="2" y2="4"/>
+            </svg>
+        </div>
+        
+        <span class="hero-subtitle">Taste the Atmosphere</span>
+        <h1 class="hero-title char-reveal">Experience Aura Café</h1>
+        <p class="hero-description">
+            Handcrafted beverages, fresh baked treats, and premium gourmet desserts made from locally sourced organic ingredients. Add to your order below!
+        </p>
+        
+        <!-- CTA Button -->
+        <a href="#menu-section" class="hero-cta magnetic-btn" id="hero-cta-btn">
+            Browse Menu
+            <span class="cta-arrow">↓</span>
+        </a>
+    </div>
+</section>
+
+<!-- Category Filtering and Menu Items Grid -->
+<div class="container" id="menu-section">
+    <!-- Skeleton Loading State -->
+    <div id="skeleton-loader">
+        <div class="filters">
+            <div class="skeleton-line" style="width: 100px; height: 44px; border-radius: 50px; display: inline-block;"></div>
+            <div class="skeleton-line" style="width: 90px; height: 44px; border-radius: 50px; display: inline-block;"></div>
+            <div class="skeleton-line" style="width: 80px; height: 44px; border-radius: 50px; display: inline-block;"></div>
+            <div class="skeleton-line" style="width: 100px; height: 44px; border-radius: 50px; display: inline-block;"></div>
+        </div>
+        <div class="menu-grid">
+            <div class="skeleton-card">
+                <div class="skeleton-img"></div>
+                <div class="skeleton-body">
+                    <div class="skeleton-line medium"></div>
+                    <div class="skeleton-line short"></div>
+                    <div class="skeleton-line full"></div>
+                </div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-img"></div>
+                <div class="skeleton-body">
+                    <div class="skeleton-line medium"></div>
+                    <div class="skeleton-line short"></div>
+                    <div class="skeleton-line full"></div>
+                </div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-img"></div>
+                <div class="skeleton-body">
+                    <div class="skeleton-line medium"></div>
+                    <div class="skeleton-line short"></div>
+                    <div class="skeleton-line full"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actual Content (hidden initially, shown by JS) -->
+    <div id="actual-menu-content">
+        <!-- Category Pills -->
+        <div class="filters scroll-reveal" id="category-filters">
+            <button class="filter-btn active" data-filter="all">All Items</button>
+            {% for category in categories %}
+                <button class="filter-btn" data-filter="{{ category.slug }}">{{ category.name }}</button>
+            {% endfor %}
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="menu-grid scroll-reveal" id="menu-items-grid">
+            {% for item in items %}
+                <div class="menu-card" data-category="{{ item.category.slug }}">
+                    <div class="card-tilt-glow"></div>
+                    <div class="card-img-wrapper">
+                        {% if forloop.counter <= 3 %}
+                            {% if item.image_url %}
+                                <img src="{{ item.image_url }}" class="card-img" alt="{{ item.name }}" fetchpriority="high" width="400" height="240">
+                            {% else %}
+                                <img src="{% static 'testapp/images/cappuccino.png' %}" class="card-img" alt="{{ item.name }}" fetchpriority="high" width="400" height="240">
+                            {% endif %}
+                        {% else %}
+                            {% if item.image_url %}
+                                <img src="{{ item.image_url }}" class="card-img" alt="{{ item.name }}" loading="lazy" width="400" height="240">
+                            {% else %}
+                                <img src="{% static 'testapp/images/cappuccino.png' %}" class="card-img" alt="{{ item.name }}" loading="lazy" width="400" height="240">
+                            {% endif %}
+                        {% endif %}
+                        <span class="card-badge">{{ item.category.name }}</span>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="card-title-row">
+                            <h3 class="card-title">{{ item.name }}</h3>
+                            <span class="card-price">${{ item.price }}</span>
+                        </div>
+                        <p class="card-desc">{{ item.description }}</p>
+                        
+                        <div class="card-footer">
+                            {% if item.is_available %}
+                                <button class="add-to-cart-btn" 
+                                        data-id="{{ item.id }}" 
+                                        data-name="{{ item.name }}" 
+                                        data-price="{{ item.price }}" 
+                                        data-image="{% if item.image_url %}{{ item.image_url }}{% else %}{% static 'testapp/images/cappuccino.png' %}{% endif %}">
+                                    <span class="btn-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+                                            <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+                                        </svg>
+                                    </span>
+                                    <span class="btn-text">Add to Order</span>
+                                </button>
+                            {% else %}
+                                <button class="add-to-cart-btn" style="border-color: var(--text-muted); color: var(--text-muted); cursor: not-allowed;" disabled>
+                                    Out of Stock
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div style="grid-column: 1 / -1; text-align: center; padding: 60px 0;">
+                    <p style="font-size: 18px; color: var(--text-muted);">No menu items available at the moment. Please check back later!</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Skeleton loading → reveal real content
+    document.addEventListener('DOMContentLoaded', () => {
+        const skeleton = document.getElementById('skeleton-loader');
+        const actual = document.getElementById('actual-menu-content');
+        
+        // Brief skeleton display then reveal
+        setTimeout(() => {
+            if (skeleton) skeleton.style.display = 'none';
+            if (actual) actual.style.display = 'block';
+            
+            // Trigger card entrance animations via IntersectionObserver
+            initCardAnimations();
+        }, 600);
+
+        // Client-side Category Filtering
+        const filterBtns = document.querySelectorAll('#category-filters .filter-btn');
+        const menuCards = document.querySelectorAll('#menu-items-grid .menu-card');
+        
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active class from all buttons
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const filterValue = btn.getAttribute('data-filter');
+                
+                menuCards.forEach(card => {
+                    if (filterValue === 'all' || card.getAttribute('data-category') === filterValue) {
+                        card.style.display = 'flex';
+                        // Re-trigger entrance animation
+                        card.classList.remove('visible');
+                        void card.offsetHeight;
+                        card.classList.add('visible');
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+        
+        // Hamburger menu toggle
+        const hamburger = document.getElementById('hamburger-btn');
+        const navLinks = document.getElementById('nav-links');
+        
+        if (hamburger && navLinks) {
+            hamburger.addEventListener('click', () => {
+                hamburger.classList.toggle('active');
+                navLinks.classList.toggle('open');
+            });
+            
+            // Close on nav link click
+            navLinks.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    hamburger.classList.remove('active');
+                    navLinks.classList.remove('open');
+                });
+            });
+        }
+    });
+    
+    function initCardAnimations() {
+        const cards = document.querySelectorAll('.menu-card');
+        
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        // Staggered delay based on position
+                        const delay = Array.from(cards).indexOf(entry.target) * 100;
+                        setTimeout(() => {
+                            entry.target.classList.add('visible');
+                        }, delay);
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            cards.forEach(card => observer.observe(card));
+        } else {
+            // Fallback: show all cards immediately
+            cards.forEach(card => card.classList.add('visible'));
+        }
+    }
+</script>
+{% endblock %}
