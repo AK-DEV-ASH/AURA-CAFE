@@ -61,6 +61,12 @@ if allowed_hosts_env:
 else:
     ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'localhost:8000']
 
+# Automatically append Render's external hostname if deployed on Render
+render_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if render_hostname:
+    ALLOWED_HOSTS.append(render_hostname)
+
+
 
 
 # Application definition
